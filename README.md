@@ -1,32 +1,69 @@
-# Clínica Dermatológica Valencia - Sistema de Gestión
+# Clínica Dermatológica Valencia – Sistema de Gestión
 
-Sistema web académico para la gestión de una clínica dermatológica, desarrollado con Django y Django REST Framework.
+Sistema web académico para la gestión integral de una clínica dermatológica, desarrollado con **Django** y **Django REST Framework**.  
+Incluye autenticación de usuarios, control de pacientes, registro de consultas, notificaciones y un panel administrativo.
 
-## Funcionalidades
-- Gestión de usuarios
-- Control de pacientes
-- Registro de consultas
-- Administración básica del sistema
+---
 
-## Tecnologías utilizadas
-- Python
-- Django
-- Django REST Framework
+## 🚀 ¿Qué hace este proyecto?
+
+- Autenticación de usuarios (login / registro)
+- Roles de usuario (admin / operador)
+- Gestión de pacientes
+- Registro de consultas médicas
+- Panel administrativo (dashboard)
+- Sistema de notificaciones
+- Bitácora de acciones
+- API REST para consumo externo
 - Base de datos relacional
+- Interfaz web responsiva
 
-## Estado del proyecto
-Proyecto académico. El sistema fue funcional durante su desarrollo; actualmente se presenta el código como evidencia de la estructura y lógica del sistema.
+---
+
+## 🧠 Características Técnicas
+
+- Backend con Django
+- API REST con Django REST Framework
+- Sistema de autenticación y roles
+- CRUD de pacientes
+- CRUD de consultas
+- Gestión de usuarios
+- Sistema de notificaciones internas
+- Panel administrativo
+- Bitácora de eventos del sistema
+- Arquitectura MVC
+- Separación frontend / backend
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+| Tecnología | Uso |
+|-----------|-----|
+| Python 3.10+ | Lenguaje principal |
+| Django | Backend |
+| Django REST Framework | API REST |
+| HTML / CSS / JS | Interfaz web |
+| Bootstrap | Estilos UI |
+| MySQL / SQLite | Base de datos |
+| GitHub Actions | CI básico |
+| JWT (opcional) | Autenticación API |
+
+---
 
 
-Login
-![Login](docs/screenshots/login.png)
+## 📷 Capturas de Pantalla
 
-Historial
-![Historial](docs/screenshots/historial.png)
+### Login
+<img src="docs/screenshots/login.png" width="450">
 
-Notificaciones
-![Notificaciones](docs/screenshots/notificaciones.jpeg)
+### Roles
+<img src="docs/screenshots/usuarios.png" width="450">
 
-Usuarios
-![Usuarios](docs/screenshots/usuarios.png)
+### Historial
+<img src="docs/screenshots/historial.png" width="450">
+
+### Notificaciones
+<img src="docs/screenshots/notificaciones.jpeg" width="450">
+
 
