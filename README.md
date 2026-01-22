@@ -5,7 +5,7 @@ Incluye autenticación de usuarios, control de pacientes, registro de consultas,
 
 ---
 
-## 🚀 ¿Qué hace este proyecto?
+##  ¿Qué hace este proyecto?
 
 - Autenticación de usuarios (login / registro)
 - Roles de usuario (admin / operador)
@@ -13,13 +13,31 @@ Incluye autenticación de usuarios, control de pacientes, registro de consultas,
 - Registro de consultas médicas
 - Panel administrativo (dashboard)
 - Sistema de notificaciones
+- API REST para consumo externo
 - Bitácora de acciones
 - Base de datos relacional
 - Interfaz web responsiva
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Características Técnicas
+
+- Backend con Django
+- API REST con Django REST Framework
+- Sistema de autenticación y roles
+- CRUD de pacientes
+- CRUD de consultas
+- Gestión de usuarios
+- Sistema de notificaciones internas
+- Panel administrativo
+- Bitácora de eventos del sistema
+- Arquitectura MVC
+- Separación frontend / backend
+
+
+---
+
+## Tecnologías Utilizadas
 
 | Tecnología | Uso |
 |-----------|-----|
@@ -35,7 +53,7 @@ Incluye autenticación de usuarios, control de pacientes, registro de consultas,
 ---
 
 
-## 📷 Capturas de Pantalla
+## Capturas de Pantalla
 
 ### Login
 <img src="docs/screenshots/login.png" width="450">
