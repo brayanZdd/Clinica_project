@@ -14,25 +14,8 @@ Incluye autenticación de usuarios, control de pacientes, registro de consultas,
 - Panel administrativo (dashboard)
 - Sistema de notificaciones
 - Bitácora de acciones
-- API REST para consumo externo
 - Base de datos relacional
 - Interfaz web responsiva
-
----
-
-## 🧠 Características Técnicas
-
-- Backend con Django
-- API REST con Django REST Framework
-- Sistema de autenticación y roles
-- CRUD de pacientes
-- CRUD de consultas
-- Gestión de usuarios
-- Sistema de notificaciones internas
-- Panel administrativo
-- Bitácora de eventos del sistema
-- Arquitectura MVC
-- Separación frontend / backend
 
 ---
 
