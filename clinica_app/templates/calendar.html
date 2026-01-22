@@ -1,0 +1,387 @@
+<!-- clinica_app/templates/calendar.html -->
+{% extends 'base.html' %}
+
+{% block title %}Calendario de Citas - Clínica Dermatológica{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 10px;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+    }
+
+    .calendar-day-header {
+        text-align: center;
+        font-weight: bold;
+        padding: 10px;
+        background-color: #34495e;
+        color: white;
+        border-radius: 5px;
+    }
+
+    .calendar-day {
+        min-height: 100px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #f8f9fa;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .calendar-day:hover {
+        background: #e3f2fd;
+        transform: scale(1.02);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-day.other-month {
+        background: #ecf0f1;
+        color: #95a5a6;
+    }
+
+    .calendar-day.today {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        font-weight: bold;
+    }
+
+    .calendar-day.has-appointments {
+        background: #d1f2eb;
+    }
+
+    .day-number {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #2c3e50;
+    }
+
+    .appointment-indicator {
+        display: block;
+        margin: 2px 0;
+        padding: 2px 4px;
+        background: var(--secondary-color);
+        color: white;
+        border-radius: 3px;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .appointment-indicator.confirmed {
+        background: var(--success-color);
+    }
+
+    .appointment-indicator.pending {
+        background: #f39c12;
+    }
+
+    .legend {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+
+    /* Modal de detalles */
+    .appointment-details {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .appointment-time {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-container">
+    <div class="calendar-header">
+        <button class="btn btn-light" onclick="changeMonth(-1)">
+            <i class="fas fa-chevron-left"></i> Anterior
+        </button>
+        <h3 id="current-month">Cargando...</h3>
+        <button class="btn btn-light" onclick="changeMonth(1)">
+            Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <div class="calendar-grid">
+        <!-- Headers de días -->
+        <div class="calendar-day-header">Dom</div>
+        <div class="calendar-day-header">Lun</div>
+        <div class="calendar-day-header">Mar</div>
+        <div class="calendar-day-header">Mié</div>
+        <div class="calendar-day-header">Jue</div>
+        <div class="calendar-day-header">Vie</div>
+        <div class="calendar-day-header">Sáb</div>
+        <!-- Los días del calendario se generarán dinámicamente -->
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #fff3cd; border: 2px solid #ffc107;"></div>
+            <span>Hoy</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #d1f2eb;"></div>
+            <span>Con citas</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: var(--success-color);"></div>
+            <span>Confirmada</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f39c12;"></div>
+            <span>Pendiente</span>
+        </div>
+    </div>
+
+    {% if puede_agendar %}
+    <div class="text-center mt-4">
+        <a href="{% url 'agendar_cita' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-calendar-plus"></i> Agendar Nueva Cita
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para mostrar detalles del día -->
+<div class="modal fade" id="dayModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-day"></i> <span id="modalDate"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="appointmentsList"></div>
+                {% if puede_agendar %}
+                <div class="text-center mt-3">
+                    <button class="btn btn-success" onclick="agendarCitaDia()">
+                        <i class="fas fa-plus"></i> Agendar cita este día
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REEMPLAZA TODO el bloque <script> del calendar.html con esto: -->
+
+<script>
+    // Variables globales
+    var currentMonth = parseInt("{{ mes }}");
+    var currentYear = parseInt("{{ año }}");
+    var appointments = JSON.parse('{{ citas|safe }}');
+    var selectedDate = null;
+
+    // Nombres de meses en español
+    var monthNames = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        renderCalendar();
+    });
+
+    function renderCalendar() {
+        var firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+        var daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        var daysInPrevMonth = new Date(currentYear, currentMonth - 1, 0).getDate();
+
+        document.getElementById('current-month').textContent = 
+            monthNames[currentMonth - 1] + ' ' + currentYear;
+
+        var grid = document.querySelector('.calendar-grid');
+        var headers = Array.from(grid.querySelectorAll('.calendar-day-header'));
+        
+        // Limpiar grid pero mantener headers
+        while (grid.children.length > 7) {
+            grid.removeChild(grid.lastChild);
+        }
+
+        // Días previos
+        for (var i = firstDay - 1; i >= 0; i--) {
+            grid.appendChild(createDayElement(daysInPrevMonth - i, currentMonth - 1, currentYear, true));
+        }
+
+        // Días actuales
+        for (var day = 1; day <= daysInMonth; day++) {
+            grid.appendChild(createDayElement(day, currentMonth, currentYear, false));
+        }
+
+        // Días siguientes
+        var totalCells = grid.children.length - 7;
+        var remainingCells = 35 - totalCells;
+        for (var day = 1; day <= remainingCells; day++) {
+            grid.appendChild(createDayElement(day, currentMonth + 1, currentYear, true));
+        }
+    }
+
+    function createDayElement(day, month, year, isOtherMonth) {
+        var dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        if (isOtherMonth) dayDiv.classList.add('other-month');
+
+        var today = new Date();
+        if (day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear()) {
+            dayDiv.classList.add('today');
+        }
+
+        var monthStr = month < 10 ? '0' + month : month.toString();
+        var dayStr = day < 10 ? '0' + day : day.toString();
+        var dateStr = year + '-' + monthStr + '-' + dayStr;
+        
+        var dayAppointments = [];
+        for (var i = 0; i < appointments.length; i++) {
+            if (appointments[i].fecha === dateStr) {
+                dayAppointments.push(appointments[i]);
+            }
+        }
+        
+        if (dayAppointments.length > 0) {
+            dayDiv.classList.add('has-appointments');
+        }
+
+        var content = '<div class="day-number">' + day + '</div>';
+        
+        for (var j = 0; j < Math.min(3, dayAppointments.length); j++) {
+            var apt = dayAppointments[j];
+            var statusClass = apt.estado === 'CONFIRMADA' ? 'confirmed' : 'pending';
+            var hora = apt.hora ? apt.hora.substring(0, 5) : '';
+            var medico = apt.medico_nombre ? apt.medico_nombre.split(' ')[0] : '';
+            content += '<div class="appointment-indicator ' + statusClass + '">' +
+                hora + ' - ' + medico + '</div>';
+        }
+        
+        if (dayAppointments.length > 3) {
+            content += '<div class="appointment-indicator">+' + (dayAppointments.length - 3) + ' más</div>';
+        }
+
+        dayDiv.innerHTML = content;
+        
+        // Crear closure para mantener los valores
+        (function(d, m, y, appointments) {
+            dayDiv.addEventListener('click', function() {
+                showDayDetails(d, m, y, appointments);
+            });
+        })(day, month, year, dayAppointments);
+        
+        return dayDiv;
+    }
+
+    function changeMonth(delta) {
+        currentMonth += delta;
+        if (currentMonth > 12) { 
+            currentMonth = 1; 
+            currentYear++; 
+        } else if (currentMonth < 1) { 
+            currentMonth = 12; 
+            currentYear--; 
+        }
+        loadMonthAppointments();
+    }
+
+    function loadMonthAppointments() {
+        window.location.href = '?mes=' + currentMonth + '&año=' + currentYear;
+    }
+
+    function showDayDetails(day, month, year, dayAppointments) {
+        var monthStr = month < 10 ? '0' + month : month.toString();
+        var dayStr = day < 10 ? '0' + day : day.toString();
+        selectedDate = year + '-' + monthStr + '-' + dayStr;
+        
+        document.getElementById('modalDate').textContent = 
+            day + ' de ' + monthNames[month - 1] + ' de ' + year;
+
+        var appointmentsList = document.getElementById('appointmentsList');
+        
+        if (dayAppointments.length === 0) {
+            appointmentsList.innerHTML = 
+                '<div class="alert alert-info">' +
+                '<i class="fas fa-info-circle"></i> No hay citas programadas para este día' +
+                '</div>';
+        } else {
+            var html = '';
+            for (var i = 0; i < dayAppointments.length; i++) {
+                var apt = dayAppointments[i];
+                var statusBadge = apt.estado === 'CONFIRMADA'
+                    ? '<span class="badge bg-success">Confirmada</span>'
+                    : '<span class="badge bg-warning">Pendiente</span>';
+                    
+                html += '<div class="appointment-details">' +
+                    '<div class="d-flex justify-content-between align-items-start">' +
+                    '<div>' +
+                    '<div class="appointment-time">' +
+                    '<i class="fas fa-clock"></i> ' + (apt.hora ? apt.hora.substring(0, 5) : '') +
+                    '</div>' +
+                    '<div class="mt-2">' +
+                    '<strong>Paciente:</strong> ' + (apt.paciente_nombre || '') + '<br>' +
+                    '<strong>Médico:</strong> ' + (apt.medico_nombre || '') + '<br>' +
+                    '<strong>Motivo:</strong> ' + (apt.motivo || '') +
+                    '</div>' +
+                    '</div>' +
+                    '<div>' + statusBadge + '</div>' +
+                    '</div>' +
+                    '</div>';
+            }
+            appointmentsList.innerHTML = html;
+        }
+
+        // Mostrar modal usando Bootstrap
+        var modal = new bootstrap.Modal(document.getElementById('dayModal'));
+        modal.show();
+    }
+
+    function agendarCitaDia() {
+        if (selectedDate) {
+            window.location.href = "{% url 'agendar_cita' %}?fecha=" + selectedDate;
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+-- Agregar este procedimiento almacenado a tu base de datos
+
+DELIMITER //
+
+CREATE PROCEDURE sp_actualizar_estado_cita(
+    IN p_cita_id INT,
+    IN p_nuevo_estado VARCHAR(20)
+)
+BEGIN
+    UPDATE citas 
+    SET estado = p_nuevo_estado,
+        updated_at = NOW()
+    WHERE id = p_cita_id;
+    
+    SELECT 'Estado actualizado exitosamente' AS mensaje;
+END//
+
+DELIMITER ;

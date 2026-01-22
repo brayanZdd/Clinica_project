@@ -1,0 +1,360 @@
+/* ========================================
+     ARCHIVO: style.css
+     UBICACIÓN: clinica_app/static/css/style.css
+     
+     PROPÓSITO:
+     - Estilos globales y reutilizables
+     - Variables CSS del tema Valencia
+     - Efectos visuales (glassmorphism, hover, etc.)
+     - Animaciones personalizadas
+     - Clases utility (pueden usarse en cualquier página)
+     
+     USO: 
+     - Se incluye con {% load static %} en templates
+     - Complementa estilos de Bootstrap
+     - Define identidad visual de la clínica
+======================================== */
+
+/* clinica_app/static/css/style.css */
+
+/* ========================================
+   VARIABLES CSS GLOBALES
+   
+   PROPÓSITO:
+   - Definir colores y valores del tema Valencia
+   - Centralizar valores para fácil mantenimiento
+   - Usar con var(--nombre-variable)
+   
+   VENTAJAS:
+   - Cambiar color en un solo lugar
+   - Consistencia en toda la aplicación
+   - Fácil crear variaciones de tema
+======================================== */
+:root {
+    /* COLORES PRIMARIOS de la marca Valencia */
+    --valencia-blue: #2c5aa0;           /* Azul principal Valencia */
+    --valencia-light-blue: #5b9dd9;     /* Azul claro Valencia */
+    --valencia-cyan: #00bcd4;           /* Cyan de acento */
+    
+    /* GRADIENTES predefinidos */
+    --gradient-primary: linear-gradient(135deg, #2c5aa0 0%, #5b9dd9 100%);
+    --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    
+    /* SOMBRAS predefinidas */
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);    /* Sombra suave */
+    --shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.15);  /* Sombra al hover */
+}
+
+/* ========================================
+   EFECTO GLASSMORPHISM
+   
+   PROPÓSITO:
+   - Crear efecto de vidrio esmerilado
+   - Fondo semitransparente con blur
+   - Estilo moderno y elegante
+   
+   USO: Agregar clase .glass-effect a elemento
+   
+   EJEMPLO:
+   <div class="glass-effect">Contenido</div>
+======================================== */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.95);     /* Fondo blanco 95% opaco */
+    backdrop-filter: blur(10px);               /* Blur del fondo */
+    -webkit-backdrop-filter: blur(10px);       /* Safari compatibility */
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Borde sutil */
+}
+
+/* ========================================
+   EFECTO HOVER LIFT
+   
+   PROPÓSITO:
+   - Elevar elemento al pasar mouse
+   - Añadir sombra más pronunciada
+   - Feedback visual de interactividad
+   
+   USO: Agregar clase .hover-lift
+   
+   APLICACIONES:
+   - Cards clicables
+   - Botones
+   - Items de lista
+======================================== */
+.hover-lift {
+    transition: all 0.3s ease;  /* Transición suave de 0.3s */
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);       /* Elevar 5px hacia arriba */
+    box-shadow: var(--shadow-hover);   /* Sombra más pronunciada */
+}
+
+/* ========================================
+   EFECTO SHIMMER (Brillo animado)
+   
+   PROPÓSITO:
+   - Crear efecto de brillo que cruza el elemento
+   - Indica que es interactivo/clicable
+   - Atrae atención del usuario
+   
+   FUNCIONAMIENTO:
+   - ::before crea una franja de luz
+   - Al hover se mueve de izquierda a derecha
+   - Requiere overflow: hidden en contenedor
+   
+   USO: Agregar clase .shimmer-effect
+======================================== */
+.shimmer-effect {
+    position: relative;
+    overflow: hidden;  /* CRÍTICO: Oculta el brillo fuera del elemento */
+}
+
+.shimmer-effect::before {
+    content: '';                /* Pseudo-elemento vacío */
+    position: absolute;
+    top: 0;
+    left: -100%;               /* Inicialmente fuera a la izquierda */
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,                    /* Empieza transparente */
+        rgba(255, 255, 255, 0.3),      /* Centro blanco semi-transparente */
+        transparent                     /* Termina transparente */
+    );
+    transition: left 0.5s;     /* Animación de 0.5 segundos */
+}
+
+.shimmer-effect:hover::before {
+    left: 100%;                /* Al hover se mueve a la derecha */
+}
+
+/* ========================================
+   BOTÓN VALENCIA
+   
+   PROPÓSITO:
+   - Botón con estilo corporativo Valencia
+   - Gradiente azul característico
+   - Efectos hover interactivos
+   
+   CARACTERÍSTICAS:
+   - Gradiente de fondo
+   - Bordes redondeados
+   - Sombra con color de marca
+   - Elevación al hover
+   
+   USO: <button class="btn-valencia">Texto</button>
+======================================== */
+.btn-valencia {
+    background: var(--gradient-primary);  /* Gradiente azul Valencia */
+    color: white;
+    border: none;
+    border-radius: 25px;                  /* Bordes muy redondeados */
+    padding: 12px 30px;
+    font-weight: 600;                     /* Texto semi-bold */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);  /* Sombra azul */
+    position: relative;
+    overflow: hidden;                     /* Para efectos adicionales */
+}
+
+.btn-valencia:hover {
+    transform: translateY(-2px);          /* Elevar 2px */
+    box-shadow: 0 6px 20px rgba(44, 90, 160, 0.4);  /* Sombra más intensa */
+}
+
+/* ========================================
+   CARD VALENCIA
+   
+   PROPÓSITO:
+   - Tarjeta con estilo corporativo
+   - Fondo con gradiente sutil
+   - Efecto radial al hover
+   
+   EFECTOS:
+   - Gradiente blanco transparente
+   - ::after crea halo radial al hover
+   - Sombra suave
+   
+   USO: <div class="card-valencia">Contenido</div>
+======================================== */
+.card-valencia {
+    /* FONDO: Gradiente blanco con transparencia */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* PSEUDO-ELEMENTO: Halo radial animado */
+.card-valencia::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    /* Gradiente radial azul claro */
+    background: radial-gradient(circle, rgba(91, 157, 217, 0.1) 0%, transparent 70%);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+    opacity: 0;  /* Invisible por defecto */
+}
+
+.card-valencia:hover::after {
+    opacity: 1;  /* Visible al hover */
+}
+
+/* ========================================
+   ANIMACIONES KEYFRAMES
+   
+   PROPÓSITO:
+   - Definir animaciones reutilizables
+   - Aplicar con: animation: nombre duración;
+   
+   TIPOS:
+   - fadeInUp: Aparece y sube
+   - slideInLeft: Desliza desde izquierda
+   - pulse: Efecto de pulso con sombra
+======================================== */
+
+/* FADE IN UP: Aparece subiendo desde abajo */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;                    /* Invisible */
+        transform: translateY(30px);   /* 30px abajo */
+    }
+    to {
+        opacity: 1;                    /* Visible */
+        transform: translateY(0);      /* Posición normal */
+    }
+}
+
+/* SLIDE IN LEFT: Desliza desde la izquierda */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;                    /* Invisible */
+        transform: translateX(-50px);  /* 50px a la izquierda */
+    }
+    to {
+        opacity: 1;                    /* Visible */
+        transform: translateX(0);      /* Posición normal */
+    }
+}
+
+/* PULSE: Efecto de pulso con sombra expandente */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(44, 90, 160, 0.7);  /* Sombra pequeña opaca */
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(44, 90, 160, 0); /* Sombra grande transparente */
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(44, 90, 160, 0);    /* Vuelve a pequeña */
+    }
+}
+
+/* ========================================
+   TEXTO CON GRADIENTE VALENCIA
+   
+   PROPÓSITO:
+   - Aplicar gradiente azul al texto
+   - Efecto moderno y llamativo
+   - Útil para títulos importantes
+   
+   TÉCNICA:
+   - background-clip: text hace que el fondo
+     solo se vea en las letras
+   - text-fill-color: transparent hace transparente
+     el color del texto para ver el fondo
+   
+   USO: <h1 class="text-gradient-valencia">Título</h1>
+======================================== */
+.text-gradient-valencia {
+    background: var(--gradient-primary);      /* Gradiente azul */
+    -webkit-background-clip: text;            /* Clip a texto (Safari) */
+    -webkit-text-fill-color: transparent;     /* Texto transparente (Safari) */
+    background-clip: text;                    /* Clip a texto (estándar) */
+}
+
+/* ========================================
+   SCROLLBAR PERSONALIZADO
+   
+   PROPÓSITO:
+   - Estilizar barra de desplazamiento
+   - Usar colores de la marca
+   - Mejor estética que scrollbar por defecto
+   
+   NOTA: Solo funciona en navegadores Webkit
+   (Chrome, Safari, Edge, Opera)
+   
+   PARTES:
+   - ::-webkit-scrollbar: Barra completa
+   - ::-webkit-scrollbar-track: Pista de fondo
+   - ::-webkit-scrollbar-thumb: Deslizador
+======================================== */
+
+/* ANCHO de la scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* PISTA (fondo de la scrollbar) */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;  /* Gris muy claro */
+}
+
+/* DESLIZADOR (parte que se mueve) */
+::-webkit-scrollbar-thumb {
+    background: var(--valencia-blue);  /* Azul Valencia */
+    border-radius: 5px;                /* Bordes redondeados */
+}
+
+/* HOVER en deslizador */
+::-webkit-scrollbar-thumb:hover {
+    background: var(--valencia-light-blue);  /* Azul más claro al hover */
+}
+
+/* ========================================
+   NOTAS DE USO GENERAL
+   
+   CÓMO USAR ESTAS CLASES:
+   
+   1. VARIABLES CSS:
+      color: var(--valencia-blue);
+      background: var(--gradient-primary);
+   
+   2. CLASES UTILITY:
+      <div class="glass-effect hover-lift">
+      <button class="btn-valencia shimmer-effect">
+      <div class="card-valencia">
+   
+   3. ANIMACIONES:
+      animation: fadeInUp 0.6s ease-out;
+      animation: slideInLeft 0.5s ease;
+      animation: pulse 2s infinite;
+   
+   4. TEXTO CON GRADIENTE:
+      <h1 class="text-gradient-valencia">Título</h1>
+   
+   VENTAJAS:
+   - Reutilizable en todas las páginas
+   - Consistencia visual
+   - Fácil mantenimiento
+   - Reduce CSS duplicado
+   
+   IMPORTANTE:
+   - Estas clases complementan Bootstrap
+   - No reemplazan clases de Bootstrap
+   - Pueden combinarse libremente
+   
+   EJEMPLOS DE COMBINACIÓN:
+   <div class="card glass-effect hover-lift">
+   <button class="btn btn-valencia shimmer-effect">
+   <h2 class="text-center text-gradient-valencia">
+======================================== */

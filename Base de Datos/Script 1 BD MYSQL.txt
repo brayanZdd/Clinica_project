@@ -1,0 +1,330 @@
+-- Crear base de datos
+CREATE DATABASE IF NOT EXISTS clinica_db CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
+USE clinica_db;
+
+-- Tabla de Usuarios (personalizada para Django)
+CREATE TABLE IF NOT EXISTS auth_user_custom (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(150) UNIQUE NOT NULL,
+    email VARCHAR(254) UNIQUE NOT NULL,
+    password VARCHAR(128) NOT NULL,
+    first_name VARCHAR(150),
+    last_name VARCHAR(150),
+    role INT NOT NULL DEFAULT 3, -- 1=Admin, 2=Medico, 3=Paciente
+    is_active BOOLEAN DEFAULT TRUE,
+    is_staff BOOLEAN DEFAULT FALSE,
+    is_superuser BOOLEAN DEFAULT FALSE,
+    date_joined DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME,
+    phone VARCHAR(20),
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de Especialidades
+CREATE TABLE IF NOT EXISTS especialidades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Médicos (información adicional)
+CREATE TABLE IF NOT EXISTS medicos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL,
+    especialidad_id INT,
+    numero_colegiado VARCHAR(50),
+    horario_inicio TIME,
+    horario_fin TIME,
+    dias_laborales VARCHAR(50), -- Ej: "LUN,MAR,MIE,JUE,VIE"
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES auth_user_custom(id) ON DELETE CASCADE,
+    FOREIGN KEY (especialidad_id) REFERENCES especialidades(id)
+);
+
+-- Tabla de Pacientes (información adicional)
+CREATE TABLE IF NOT EXISTS pacientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL,
+    fecha_nacimiento DATE,
+    tipo_sangre VARCHAR(5),
+    alergias TEXT,
+    observaciones TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES auth_user_custom(id) ON DELETE CASCADE
+);
+
+-- Tabla de Citas
+CREATE TABLE IF NOT EXISTS citas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    paciente_id INT NOT NULL,
+    medico_id INT NOT NULL,
+    fecha DATE NOT NULL,
+    hora TIME NOT NULL,
+    duracion INT DEFAULT 30, -- minutos
+    motivo TEXT,
+    estado ENUM('PENDIENTE', 'CONFIRMADA', 'CANCELADA', 'COMPLETADA') DEFAULT 'PENDIENTE',
+    observaciones TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (paciente_id) REFERENCES auth_user_custom(id),
+    FOREIGN KEY (medico_id) REFERENCES auth_user_custom(id),
+    INDEX idx_fecha_hora (fecha, hora),
+    UNIQUE KEY unique_cita (medico_id, fecha, hora)
+);
+
+-- Insertar especialidades dermatológicas
+INSERT INTO especialidades (nombre, descripcion) VALUES
+('Dermatología General', 'Diagnóstico y tratamiento de enfermedades de la piel'),
+('Dermatología Cosmética', 'Procedimientos estéticos y cuidado de la piel'),
+('Dermatología Pediátrica', 'Tratamiento de condiciones de piel en niños'),
+('Cirugía Dermatológica', 'Procedimientos quirúrgicos menores de piel');
+
+-- =====================================================
+-- PROCEDIMIENTOS ALMACENADOS
+-- =====================================================
+
+DELIMITER //
+
+-- SP para crear usuario
+CREATE PROCEDURE sp_crear_usuario(
+    IN p_username VARCHAR(150),
+    IN p_email VARCHAR(254),
+    IN p_password VARCHAR(128),
+    IN p_first_name VARCHAR(150),
+    IN p_last_name VARCHAR(150),
+    IN p_role INT,
+    IN p_phone VARCHAR(20),
+    IN p_address TEXT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT 'Error al crear usuario' AS mensaje, 0 AS id;
+    END;
+    
+    START TRANSACTION;
+    
+    INSERT INTO auth_user_custom (
+        username, email, password, first_name, last_name, 
+        role, phone, address, is_staff, is_superuser
+    ) VALUES (
+        p_username, p_email, p_password, p_first_name, p_last_name,
+        p_role, p_phone, p_address,
+        IF(p_role = 1, TRUE, FALSE),
+        IF(p_role = 1, TRUE, FALSE)
+    );
+    
+    SELECT 'Usuario creado exitosamente' AS mensaje, LAST_INSERT_ID() AS id;
+    
+    COMMIT;
+END//
+
+-- SP para login
+CREATE PROCEDURE sp_login_usuario(
+    IN p_username VARCHAR(150),
+    IN p_password VARCHAR(128)
+)
+BEGIN
+    DECLARE v_user_id INT;
+    
+    SELECT id INTO v_user_id
+    FROM auth_user_custom
+    WHERE (username = p_username OR email = p_username)
+    AND password = p_password
+    AND is_active = TRUE;
+    
+    IF v_user_id IS NOT NULL THEN
+        UPDATE auth_user_custom 
+        SET last_login = NOW() 
+        WHERE id = v_user_id;
+        
+        SELECT id, username, email, first_name, last_name, role, phone
+        FROM auth_user_custom
+        WHERE id = v_user_id;
+    ELSE
+        SELECT NULL AS id, 'Credenciales inválidas' AS mensaje;
+    END IF;
+END//
+
+-- SP para crear médico
+CREATE PROCEDURE sp_crear_medico(
+    IN p_user_id INT,
+    IN p_especialidad_id INT,
+    IN p_numero_colegiado VARCHAR(50),
+    IN p_horario_inicio TIME,
+    IN p_horario_fin TIME,
+    IN p_dias_laborales VARCHAR(50)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT 'Error al crear médico' AS mensaje;
+    END;
+    
+    START TRANSACTION;
+    
+    INSERT INTO medicos (
+        user_id, especialidad_id, numero_colegiado,
+        horario_inicio, horario_fin, dias_laborales
+    ) VALUES (
+        p_user_id, p_especialidad_id, p_numero_colegiado,
+        p_horario_inicio, p_horario_fin, p_dias_laborales
+    );
+    
+    SELECT 'Médico creado exitosamente' AS mensaje;
+    
+    COMMIT;
+END//
+
+-- SP para crear paciente
+CREATE PROCEDURE sp_crear_paciente(
+    IN p_user_id INT,
+    IN p_fecha_nacimiento DATE,
+    IN p_tipo_sangre VARCHAR(5),
+    IN p_alergias TEXT,
+    IN p_observaciones TEXT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT 'Error al crear paciente' AS mensaje;
+    END;
+    
+    START TRANSACTION;
+    
+    INSERT INTO pacientes (
+        user_id, fecha_nacimiento, tipo_sangre, alergias, observaciones
+    ) VALUES (
+        p_user_id, p_fecha_nacimiento, p_tipo_sangre, p_alergias, p_observaciones
+    );
+    
+    SELECT 'Paciente creado exitosamente' AS mensaje;
+    
+    COMMIT;
+END//
+
+-- SP para agendar cita
+CREATE PROCEDURE sp_agendar_cita(
+    IN p_paciente_id INT,
+    IN p_medico_id INT,
+    IN p_fecha DATE,
+    IN p_hora TIME,
+    IN p_duracion INT,
+    IN p_motivo TEXT
+)
+BEGIN
+    DECLARE v_existe INT;
+    
+    -- Verificar disponibilidad
+    SELECT COUNT(*) INTO v_existe
+    FROM citas
+    WHERE medico_id = p_medico_id
+    AND fecha = p_fecha
+    AND hora = p_hora
+    AND estado IN ('PENDIENTE', 'CONFIRMADA');
+    
+    IF v_existe > 0 THEN
+        SELECT 'Horario no disponible' AS mensaje, 0 AS id;
+    ELSE
+        INSERT INTO citas (
+            paciente_id, medico_id, fecha, hora, duracion, motivo, estado
+        ) VALUES (
+            p_paciente_id, p_medico_id, p_fecha, p_hora, p_duracion, p_motivo, 'PENDIENTE'
+        );
+        
+        SELECT 'Cita agendada exitosamente' AS mensaje, LAST_INSERT_ID() AS id;
+    END IF;
+END//
+
+-- SP para obtener citas por fecha
+CREATE PROCEDURE sp_obtener_citas_fecha(
+    IN p_fecha_inicio DATE,
+    IN p_fecha_fin DATE
+)
+BEGIN
+    SELECT 
+        c.id,
+        c.fecha,
+        c.hora,
+        c.duracion,
+        c.estado,
+        c.motivo,
+        CONCAT(up.first_name, ' ', up.last_name) AS paciente_nombre,
+        CONCAT(um.first_name, ' ', um.last_name) AS medico_nombre,
+        e.nombre AS especialidad
+    FROM citas c
+    INNER JOIN auth_user_custom up ON c.paciente_id = up.id
+    INNER JOIN auth_user_custom um ON c.medico_id = um.id
+    LEFT JOIN medicos m ON um.id = m.user_id
+    LEFT JOIN especialidades e ON m.especialidad_id = e.id
+    WHERE c.fecha BETWEEN p_fecha_inicio AND p_fecha_fin
+    AND c.estado IN ('PENDIENTE', 'CONFIRMADA')
+    ORDER BY c.fecha, c.hora;
+END//
+
+-- SP para obtener médicos disponibles
+CREATE PROCEDURE sp_obtener_medicos()
+BEGIN
+    SELECT 
+        u.id,
+        CONCAT(u.first_name, ' ', u.last_name) AS nombre_completo,
+        e.nombre AS especialidad,
+        m.horario_inicio,
+        m.horario_fin,
+        m.dias_laborales
+    FROM auth_user_custom u
+    INNER JOIN medicos m ON u.id = m.user_id
+    LEFT JOIN especialidades e ON m.especialidad_id = e.id
+    WHERE u.role = 2 AND u.is_active = TRUE
+    ORDER BY u.last_name, u.first_name;
+END//
+
+DELIMITER ;
+
+-- Crear usuario administrador inicial
+CALL sp_crear_usuario(
+    'admin',
+    'admin@clinica.com',
+    'pbkdf2_sha256$260000$admin123', -- Contraseña: admin123 (esto debe ser hasheado correctamente en Django)
+    'Administrador',
+    'Sistema',
+    1,
+    '5555-0001',
+    'Clínica Dermatológica'
+);
+
+-- Crear médico de ejemplo
+CALL sp_crear_usuario(
+    'dr.martinez',
+    'martinez@clinica.com',
+    'pbkdf2_sha256$260000$medico123',
+    'Carlos',
+    'Martínez',
+    2,
+    '5555-0002',
+    'Consultorio 101'
+);
+
+-- Agregar información del médico
+CALL sp_crear_medico(2, 1, 'COL-12345', '08:00:00', '17:00:00', 'LUN,MAR,MIE,JUE,VIE');
+
+-- Vista para el calendario
+CREATE VIEW vista_calendario AS
+SELECT 
+    c.fecha,
+    c.hora,
+    TIME_FORMAT(c.hora, '%H:%i') AS hora_formato,
+    ADDTIME(c.hora, SEC_TO_TIME(c.duracion * 60)) AS hora_fin,
+    c.estado,
+    CONCAT(um.first_name, ' ', um.last_name) AS medico,
+    um.id AS medico_id
+FROM citas c
+INNER JOIN auth_user_custom um ON c.medico_id = um.id
+WHERE c.estado IN ('PENDIENTE', 'CONFIRMADA')
+ORDER BY c.fecha, c.hora;

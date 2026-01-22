@@ -1,0 +1,446 @@
+<!-- REEMPLAZA TODO EL CONTENIDO de register.html con esto: -->
+{% extends 'base.html' %}
+
+{% block title %}Registrar Usuario - Clínica Dermatológica{% endblock %}
+
+{% block extra_css %}
+<style>
+    .validation-feedback {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .field-valid {
+        border-color: #27ae60 !important;
+        background-color: #f0fff4;
+    }
+    .field-invalid {
+        border-color: #e74c3c !important;
+        background-color: #fff5f5;
+    }
+    .text-valid {
+        color: #27ae60;
+    }
+    .text-invalid {
+        color: #e74c3c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus"></i> Registrar Nuevo Usuario
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" id="registroForm">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                <i class="fas fa-user"></i> Usuario
+                            </label>
+                            {{ form.username }}
+                            <div id="username-feedback" class="validation-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            {{ form.email }}
+                            <div id="email-feedback" class="validation-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmación de Email -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-envelope-circle-check"></i> Confirmar Email
+                            </label>
+                            <input type="email" id="email_confirm" name="email_confirm" class="form-control" 
+                                   placeholder="Confirme su email">
+                            <div id="email-confirm-feedback" class="validation-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                <i class="fas fa-phone"></i> Teléfono
+                            </label>
+                            {{ form.phone }}
+                            <div id="phone-feedback" class="validation-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmación de Teléfono -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-phone-square"></i> Confirmar Teléfono
+                            </label>
+                            <input type="text" id="phone_confirm" name="phone_confirm" class="form-control" 
+                                   placeholder="Confirme su teléfono">
+                            <div id="phone-confirm-feedback" class="validation-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">
+                                <i class="fas fa-user-tag"></i> Rol
+                            </label>
+                            {{ form.role }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-id-card"></i> Nombre
+                            </label>
+                            {{ form.first_name }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-id-card"></i> Apellido
+                            </label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock"></i> Contraseña
+                            </label>
+                            {{ form.password }}
+                            <div id="password-feedback" class="validation-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock"></i> Confirmar Contraseña
+                            </label>
+                            {{ form.password_confirm }}
+                            <div id="password-confirm-feedback" class="validation-feedback"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">
+                            <i class="fas fa-map-marker-alt"></i> Dirección
+                        </label>
+                        {{ form.address }}
+                    </div>
+
+                    <!-- Campos adicionales para Médico -->
+                    <div id="medicoFields" style="display:none;">
+                        <hr>
+                        <h5 class="mb-3">Información del Médico</h5>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-certificate"></i> Especialidad
+                                </label>
+                                <select name="especialidad" class="form-control">
+                                    {% for esp in especialidades %}
+                                    <option value="{{ esp.id }}">{{ esp.nombre }}</option>
+                                    {% empty %}
+                                    <option value="1">Dermatología General</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Hora Inicio</label>
+                                <input type="time" name="horario_inicio" class="form-control" value="08:00">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Hora Fin</label>
+                                <input type="time" name="horario_fin" class="form-control" value="17:00">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Días Laborales</label>
+                                <input type="text" name="dias_laborales" class="form-control"
+                                    value="LUN,MAR,MIE,JUE,VIE" placeholder="LUN,MAR,MIE">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos adicionales para Paciente -->
+                    <div id="pacienteFields" style="display:none;">
+                        <hr>
+                        <h5 class="mb-3">Información del Paciente</h5>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar"></i> Fecha de Nacimiento
+                                </label>
+                                <input type="date" name="fecha_nacimiento" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-tint"></i> Tipo de Sangre
+                                </label>
+                                <select name="tipo_sangre" class="form-control">
+                                    <option value="">Seleccione...</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-allergies"></i> Alergias
+                                </label>
+                                <textarea name="alergias" class="form-control" rows="1"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-notes-medical"></i> Observaciones
+                            </label>
+                            <textarea name="observaciones" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-save"></i> Registrar Usuario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables para validación
+    var formIsValid = false;
+    
+    // Validación de email
+    function validateEmail(email) {
+        var regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+    
+    // Validación de teléfono (formato Guatemala)
+    function validatePhone(phone) {
+        var regex = /^[0-9]{4}-?[0-9]{4}$/;
+        return regex.test(phone);
+    }
+    
+    // Validación de contraseña (mínimo 6 caracteres)
+    function validatePassword(password) {
+        return password.length >= 6;
+    }
+    
+    // Validación de email en tiempo real
+    document.getElementById('id_email').addEventListener('input', function() {
+        var email = this.value;
+        var feedback = document.getElementById('email-feedback');
+        
+        if (email.length > 0) {
+            if (validateEmail(email)) {
+                this.classList.remove('field-invalid');
+                this.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Email válido';
+                feedback.className = 'validation-feedback text-valid';
+                checkEmailConfirmation();
+            } else {
+                this.classList.remove('field-valid');
+                this.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Email inválido';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        } else {
+            this.classList.remove('field-valid', 'field-invalid');
+            feedback.innerHTML = '';
+        }
+    });
+    
+    // Confirmación de email
+    function checkEmailConfirmation() {
+        var email = document.getElementById('id_email').value;
+        var emailConfirm = document.getElementById('email_confirm').value;
+        var feedback = document.getElementById('email-confirm-feedback');
+        var confirmInput = document.getElementById('email_confirm');
+        
+        if (emailConfirm.length > 0) {
+            if (email === emailConfirm && validateEmail(emailConfirm)) {
+                confirmInput.classList.remove('field-invalid');
+                confirmInput.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Los emails coinciden';
+                feedback.className = 'validation-feedback text-valid';
+            } else {
+                confirmInput.classList.remove('field-valid');
+                confirmInput.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Los emails no coinciden';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        }
+    }
+    
+    document.getElementById('email_confirm').addEventListener('input', checkEmailConfirmation);
+    
+    // Validación de teléfono
+    document.getElementById('id_phone').addEventListener('input', function() {
+        var phone = this.value;
+        var feedback = document.getElementById('phone-feedback');
+        
+        if (phone.length > 0) {
+            if (validatePhone(phone)) {
+                this.classList.remove('field-invalid');
+                this.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Formato válido (####-####)';
+                feedback.className = 'validation-feedback text-valid';
+                checkPhoneConfirmation();
+            } else {
+                this.classList.remove('field-valid');
+                this.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Use formato ####-#### o ########';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        }
+    });
+    
+    // Confirmación de teléfono
+    function checkPhoneConfirmation() {
+        var phone = document.getElementById('id_phone').value;
+        var phoneConfirm = document.getElementById('phone_confirm').value;
+        var feedback = document.getElementById('phone-confirm-feedback');
+        var confirmInput = document.getElementById('phone_confirm');
+        
+        if (phoneConfirm.length > 0) {
+            if (phone === phoneConfirm) {
+                confirmInput.classList.remove('field-invalid');
+                confirmInput.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Los teléfonos coinciden';
+                feedback.className = 'validation-feedback text-valid';
+            } else {
+                confirmInput.classList.remove('field-valid');
+                confirmInput.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Los teléfonos no coinciden';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        }
+    }
+    
+    document.getElementById('phone_confirm').addEventListener('input', checkPhoneConfirmation);
+    
+    // Validación de contraseña
+    document.getElementById('id_password').addEventListener('input', function() {
+        var password = this.value;
+        var feedback = document.getElementById('password-feedback');
+        
+        if (password.length > 0) {
+            if (validatePassword(password)) {
+                this.classList.remove('field-invalid');
+                this.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Contraseña válida';
+                feedback.className = 'validation-feedback text-valid';
+                checkPasswordConfirmation();
+            } else {
+                this.classList.remove('field-valid');
+                this.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Mínimo 6 caracteres';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        }
+    });
+    
+    // Confirmación de contraseña
+    function checkPasswordConfirmation() {
+        var password = document.getElementById('id_password').value;
+        var passwordConfirm = document.getElementById('id_password_confirm').value;
+        var feedback = document.getElementById('password-confirm-feedback');
+        var confirmInput = document.getElementById('id_password_confirm');
+        
+        if (passwordConfirm.length > 0) {
+            if (password === passwordConfirm && validatePassword(passwordConfirm)) {
+                confirmInput.classList.remove('field-invalid');
+                confirmInput.classList.add('field-valid');
+                feedback.innerHTML = '<i class="fas fa-check"></i> Las contraseñas coinciden';
+                feedback.className = 'validation-feedback text-valid';
+            } else {
+                confirmInput.classList.remove('field-valid');
+                confirmInput.classList.add('field-invalid');
+                feedback.innerHTML = '<i class="fas fa-times"></i> Las contraseñas no coinciden';
+                feedback.className = 'validation-feedback text-invalid';
+            }
+        }
+    }
+    
+    document.getElementById('id_password_confirm').addEventListener('input', checkPasswordConfirmation);
+    
+    // Validación antes de enviar
+    document.getElementById('registroForm').addEventListener('submit', function(e) {
+        var email = document.getElementById('id_email').value;
+        var emailConfirm = document.getElementById('email_confirm').value;
+        var phone = document.getElementById('id_phone').value;
+        var phoneConfirm = document.getElementById('phone_confirm').value;
+        var password = document.getElementById('id_password').value;
+        var passwordConfirm = document.getElementById('id_password_confirm').value;
+        
+        var errors = [];
+        
+        if (!validateEmail(email)) {
+            errors.push('Email inválido');
+        }
+        if (email !== emailConfirm) {
+            errors.push('Los emails no coinciden');
+        }
+        if (phone && phoneConfirm && phone !== phoneConfirm) {
+            errors.push('Los teléfonos no coinciden');
+        }
+        if (!validatePassword(password)) {
+            errors.push('La contraseña debe tener al menos 6 caracteres');
+        }
+        if (password !== passwordConfirm) {
+            errors.push('Las contraseñas no coinciden');
+        }
+        
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Por favor corrija los siguientes errores:\n\n' + errors.join('\n'));
+        }
+    });
+    
+    // Mostrar/ocultar campos según el rol seleccionado
+    document.getElementById('id_role').addEventListener('change', function () {
+        var medicoFields = document.getElementById('medicoFields');
+        var pacienteFields = document.getElementById('pacienteFields');
+
+        medicoFields.style.display = 'none';
+        pacienteFields.style.display = 'none';
+
+        if (this.value === '2') { // Médico
+            medicoFields.style.display = 'block';
+        } else if (this.value === '3') { // Paciente
+            pacienteFields.style.display = 'block';
+        }
+    });
+
+    // Trigger inicial
+    document.getElementById('id_role').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

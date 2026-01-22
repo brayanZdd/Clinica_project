@@ -1,0 +1,6 @@
+ALTER TABLE citas 
+  DROP FOREIGN KEY citas_ibfk_1, 
+  DROP FOREIGN KEY citas_ibfk_2;
+ALTER TABLE citas
+  ADD CONSTRAINT fk_citas_paciente FOREIGN KEY (paciente_id) REFERENCES auth_user_custom(id) ON DELETE CASCADE,
+  ADD CONSTRAINT fk_citas_medico FOREIGN KEY (medico_id) REFERENCES auth_user_custom(id) ON DELETE CASCADE;

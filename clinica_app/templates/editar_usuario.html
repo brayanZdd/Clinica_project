@@ -1,0 +1,110 @@
+<!-- clinica_app/templates/editar_usuario.html -->
+{% extends 'base.html' %}
+
+{% block title %}Editar Usuario - Clínica Dermatológica{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-edit"></i> Editar Usuario
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> Usuario
+                            </label>
+                            <input type="text" name="username" class="form-control" value="{{ usuario_editar.username }}" required>
+                            <small class="text-muted">Puede cambiar el nombre de usuario si es necesario</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-tag"></i> Rol
+                            </label>
+                            <input type="text" class="form-control" value="{{ usuario_editar.get_role_display }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-id-card"></i> Nombre
+                            </label>
+                            <input type="text" name="first_name" class="form-control" 
+                                   value="{{ usuario_editar.first_name }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-id-card"></i> Apellido
+                            </label>
+                            <input type="text" name="last_name" class="form-control" 
+                                   value="{{ usuario_editar.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input type="email" name="email" class="form-control" 
+                                   value="{{ usuario_editar.email }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-phone"></i> Teléfono
+                            </label>
+                            <input type="text" name="phone" class="form-control" 
+                                   value="{{ usuario_editar.phone }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-map-marker-alt"></i> Dirección
+                        </label>
+                        <textarea name="address" class="form-control" rows="2">{{ usuario_editar.address }}</textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-key"></i> <strong>Cambio de Contraseña</strong>
+                        <p class="mb-0">Deje el campo vacío si no desea cambiar la contraseña.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-lock"></i> Nueva Contraseña
+                            </label>
+                            <input type="text" name="nueva_password" class="form-control" 
+                                   placeholder="Dejar vacío para no cambiar">
+                            <small class="text-muted">Se enviará por correo al usuario</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'gestionar_usuarios' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

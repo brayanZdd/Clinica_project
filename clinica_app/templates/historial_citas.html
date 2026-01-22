@@ -1,0 +1,288 @@
+<!-- clinica_app/templates/historial_citas.html -->
+{% extends 'base.html' %}
+
+{% block title %}Historial de Citas - Clínica Dermatológica{% endblock %}
+
+{% block extra_css %}
+<style>
+    .historial-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .cita-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+    }
+
+    .cita-card:hover {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .estado-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .estado-pendiente {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .estado-confirmada {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .estado-cancelada {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .estado-completada {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .fecha-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="historial-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>
+            <i class="fas fa-history text-primary"></i> 
+            {% if es_paciente %}
+            Mis Citas
+            {% elif es_medico %}
+            Historial de Consultas
+            {% else %}
+            Todas las Citas
+            {% endif %}
+        </h3>
+        <a href="{% url 'calendario' %}" class="btn btn-outline-primary">
+            <i class="fas fa-calendar"></i> Ver Calendario
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-section">
+        <div class="row">
+            <div class="col-md-3">
+                <input type="text" id="searchInput" class="form-control" 
+                       placeholder="Buscar...">
+            </div>
+            <div class="col-md-3">
+                <select id="estadoFilter" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="CONFIRMADA">Confirmada</option>
+                    <option value="CANCELADA">Cancelada</option>
+                    <option value="COMPLETADA">Completada</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="month" id="mesFilter" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-secondary" onclick="limpiarFiltros()">
+                    <i class="fas fa-eraser"></i> Limpiar Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Citas -->
+    <div id="citasList">
+        {% if citas %}
+            {% for cita in citas %}
+            <div class="cita-card" data-estado="{{ cita.estado }}" 
+                 data-fecha="{{ cita.fecha }}"
+                 data-content="{{ cita.paciente_nombre|default:'' }} {{ cita.medico_nombre|default:'' }} {{ cita.motivo|default:'' }}">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <strong class="text-primary">
+                            <i class="fas fa-calendar-day"></i> 
+                            {{ cita.fecha|date:"d/m/Y" }}
+                        </strong>
+                        <br>
+                        <span class="text-muted">
+                            <i class="fas fa-clock"></i> 
+                            {{ cita.hora|time:"H:i" }}
+                        </span>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        {% if es_medico or es_admin %}
+                        <strong>Paciente:</strong> {{ cita.paciente_nombre }}<br>
+                        {% endif %}
+                        {% if es_paciente or es_admin %}
+                        <strong>Médico:</strong> {{ cita.medico_nombre }}<br>
+                        {% if cita.especialidad %}
+                        <small class="text-muted">{{ cita.especialidad }}</small>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <strong>Motivo:</strong><br>
+                        <small>{{ cita.motivo|truncatewords:10 }}</small>
+                    </div>
+                    
+                    <div class="col-md-2 text-center">
+                        <span class="estado-badge estado-{{ cita.estado|lower }}">
+                            {{ cita.estado }}
+                        </span>
+                        {% if user.is_admin or user.id == cita.medico_id %}
+                        <div class="mt-2">
+                            <select class="form-select form-select-sm" 
+                                    onchange="cambiarEstadoCita('{{ cita.id }}', this.value)">
+                                <option value="">Cambiar estado</option>
+                                <option value="PENDIENTE" {% if cita.estado == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                                <option value="CONFIRMADA" {% if cita.estado == 'CONFIRMADA' %}selected{% endif %}>Confirmada</option>
+                                <option value="COMPLETADA" {% if cita.estado == 'COMPLETADA' %}selected{% endif %}>Completada</option>
+                                <option value="CANCELADA" {% if cita.estado == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-1 text-end">
+                        {% if cita.estado == 'PENDIENTE' or cita.estado == 'CONFIRMADA' %}
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="cancelarCita('{{ cita.id }}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if cita.observaciones %}
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Observaciones:</strong> {{ cita.observaciones }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                No se encontraron citas en el historial.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Filtros
+    document.getElementById('searchInput').addEventListener('keyup', filtrarCitas);
+    document.getElementById('estadoFilter').addEventListener('change', filtrarCitas);
+    document.getElementById('mesFilter').addEventListener('change', filtrarCitas);
+
+    function filtrarCitas() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const estadoFilter = document.getElementById('estadoFilter').value;
+        const mesFilter = document.getElementById('mesFilter').value;
+        
+        const cards = document.querySelectorAll('.cita-card');
+        
+        cards.forEach(card => {
+            let show = true;
+            
+            // Filtro por búsqueda
+            if (searchTerm) {
+                const content = card.dataset.content.toLowerCase();
+                if (!content.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Filtro por estado
+            if (estadoFilter && card.dataset.estado !== estadoFilter) {
+                show = false;
+            }
+            
+            // Filtro por mes
+            if (mesFilter) {
+                const citaFecha = card.dataset.fecha;
+                const citaMes = citaFecha.substring(0, 7); // YYYY-MM
+                if (citaMes !== mesFilter) {
+                    show = false;
+                }
+            }
+            
+            card.style.display = show ? 'block' : 'none';
+        });
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('estadoFilter').value = '';
+        document.getElementById('mesFilter').value = '';
+        filtrarCitas();
+    }
+
+    function cambiarEstadoCita(citaId, nuevoEstado) {
+        if (!nuevoEstado) return;
+        
+        if (confirm('¿Está seguro que desea cambiar el estado de la cita?')) {
+            // Crear un formulario para enviar POST
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{% url 'actualizar_estado_cita' 0 %}".replace('0', citaId);
+            
+            // CSRF token
+            var csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            // Estado
+            var estadoInput = document.createElement('input');
+            estadoInput.type = 'hidden';
+            estadoInput.name = 'estado';
+            estadoInput.value = nuevoEstado;
+            form.appendChild(estadoInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        } else {
+            // Revertir selección si cancela
+            location.reload();
+        }
+    }
+    
+    function cancelarCita(citaId) {
+        if (confirm('¿Está seguro que desea cancelar esta cita?')) {
+            var url = "{% url 'cancelar_cita' 0 %}";
+            url = url.replace('0', citaId);
+            window.location.href = url;
+        }
+    }
+</script>
+{% endblock %}

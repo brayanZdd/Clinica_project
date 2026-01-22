@@ -1,0 +1,359 @@
+<!-- clinica_app/templates/agendar_cita.html -->
+{% extends 'base.html' %}
+
+{% block title %}Agendar Cita - Clínica Dermatológica{% endblock %}
+
+{% block extra_css %}
+<style>
+    .appointment-form {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+    }
+
+    .section-title {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .time-slot {
+        padding: 8px 12px;
+        margin: 5px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+
+    .time-slot:hover {
+        background: var(--secondary-color);
+        color: white;
+        border-color: var(--secondary-color);
+    }
+
+    .time-slot.selected {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+    }
+
+    .time-slot.unavailable {
+        background: #f0f0f0;
+        color: #999;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .preview-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="appointment-form">
+            <h3 class="text-center mb-4">
+                <i class="fas fa-calendar-plus text-primary"></i> Agendar Nueva Cita
+            </h3>
+
+            <form method="post" id="citaForm">
+                {% csrf_token %}
+
+                <!-- Sección Paciente -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-user"></i> Información del Paciente
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar Paciente</label>
+                        <select name="paciente" class="form-control" required>
+                            <option value="">-- Seleccione un paciente --</option>
+                            {% for paciente in pacientes %}
+                            <option value="{{ paciente.id }}">
+                                {{ paciente.get_full_name }} - {{ paciente.email }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sección Médico -->
+                {% if user.is_admin %}
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-user-md"></i> Médico
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar Médico</label>
+                        <select name="medico" id="medicoSelect" class="form-control" required>
+                            <option value="">-- Seleccione un médico --</option>
+                            {% for medico in medicos %}
+                            <option value="{{ medico.id }}">
+                                Dr./Dra. {{ medico.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% else %}
+                <input type="hidden" name="medico" value="{{ user.id }}">
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-user-md"></i> Médico
+                    </h5>
+                    <p class="form-control-plaintext">
+                        Dr./Dra. {{ user.get_full_name }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Sección Fecha y Hora -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-clock"></i> Fecha y Hora
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" id="fechaCita" class="form-control" 
+                                   value="{{ fecha_preseleccionada }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Hora</label>
+                            <input type="time" name="hora" id="horaCita" class="form-control" 
+                                   step="1800" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Horarios disponibles -->
+                    <div id="horariosDisponibles" style="display:none;">
+                        <label class="form-label">Horarios Disponibles</label>
+                        <div id="timeSlotsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Sección Detalles -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-notes-medical"></i> Detalles de la Cita
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Duración (minutos)</label>
+                            <select name="duracion" class="form-control">
+                                <option value="15">15 minutos</option>
+                                <option value="30" selected>30 minutos</option>
+                                <option value="45">45 minutos</option>
+                                <option value="60">60 minutos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Motivo de la Consulta</label>
+                            <textarea name="motivo" class="form-control" rows="3" 
+                                      placeholder="Describa brevemente el motivo de la consulta" required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista previa -->
+                <div class="preview-card" id="citaPreview" style="display:none;">
+                    <h6 class="mb-3"><i class="fas fa-eye"></i> Vista Previa de la Cita</h6>
+                    <div id="previewContent"></div>
+                </div>
+
+                <!-- Botones -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check"></i> Confirmar Cita
+                    </button>
+                    <a href="{% url 'calendario' %}" class="btn btn-secondary btn-lg ms-2">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Variables desde Django (estas sí se procesan)
+    var USER_IS_ADMIN = "{{ user.is_admin|yesno:'1,0' }}";
+    var USER_ID = "{{ user.id }}";
+    var CSRF_TOKEN = "{{ csrf_token }}";
+    var API_URL = "{% url 'api_citas_disponibles' %}";
+</script>
+
+{% verbatim %}
+<script type="text/javascript">
+    // Todo este código NO será procesado por Django
+    
+    function cargarHorariosDisponibles() {
+        var fecha = document.getElementById('fechaCita').value;
+        var medicoId;
+        
+        if (USER_IS_ADMIN === '1') {
+            var selectMedico = document.getElementById('medicoSelect');
+            if (selectMedico) {
+                medicoId = selectMedico.value;
+            }
+        } else {
+            medicoId = USER_ID;
+        }
+        
+        if (!fecha || !medicoId) {
+            return;
+        }
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API_URL, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', CSRF_TOKEN);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                mostrarHorariosDisponibles(data.horarios || []);
+            }
+        };
+        
+        xhr.send(JSON.stringify({
+            medico_id: medicoId,
+            fecha: fecha
+        }));
+    }
+    
+    function mostrarHorariosDisponibles(horarios) {
+        var container = document.getElementById('timeSlotsContainer');
+        var divHorarios = document.getElementById('horariosDisponibles');
+        
+        container.innerHTML = '';
+        
+        if (horarios.length > 0) {
+            divHorarios.style.display = 'block';
+            
+            for (var i = 0; i < horarios.length; i++) {
+                var slot = document.createElement('span');
+                slot.className = 'time-slot';
+                slot.textContent = horarios[i];
+                slot.setAttribute('data-hora', horarios[i]);
+                slot.onclick = function() {
+                    seleccionarHorario(this);
+                };
+                container.appendChild(slot);
+            }
+        } else {
+            divHorarios.style.display = 'block';
+            container.innerHTML = '<p class="text-warning">No hay horarios disponibles para esta fecha</p>';
+        }
+    }
+    
+    function seleccionarHorario(elemento) {
+        var slots = document.getElementsByClassName('time-slot');
+        for (var i = 0; i < slots.length; i++) {
+            slots[i].classList.remove('selected');
+        }
+        elemento.classList.add('selected');
+        document.getElementById('horaCita').value = elemento.getAttribute('data-hora');
+        actualizarPreview();
+    }
+    
+    function actualizarPreview() {
+        var form = document.getElementById('citaForm');
+        if (!form) return;
+        
+        var pacienteSelect = form.elements['paciente'];
+        var paciente = '';
+        if (pacienteSelect && pacienteSelect.selectedIndex >= 0) {
+            paciente = pacienteSelect.options[pacienteSelect.selectedIndex].text;
+        }
+        
+        var fecha = form.elements['fecha'].value;
+        var hora = form.elements['hora'].value;
+        var duracion = form.elements['duracion'].value;
+        var motivo = form.elements['motivo'].value;
+        
+        if (paciente && fecha && hora) {
+            var preview = document.getElementById('citaPreview');
+            var content = document.getElementById('previewContent');
+            
+            var fechaParts = fecha.split('-');
+            var fechaFormateada = fechaParts[2] + '/' + fechaParts[1] + '/' + fechaParts[0];
+            
+            var html = '';
+            html += '<div class="row">';
+            html += '<div class="col-md-6">';
+            html += '<p><strong>Paciente:</strong> ' + paciente + '</p>';
+            html += '<p><strong>Fecha:</strong> ' + fechaFormateada + '</p>';
+            html += '</div>';
+            html += '<div class="col-md-6">';
+            html += '<p><strong>Hora:</strong> ' + hora + '</p>';
+            html += '<p><strong>Duración:</strong> ' + duracion + ' minutos</p>';
+            html += '</div>';
+            html += '<div class="col-12">';
+            html += '<p><strong>Motivo:</strong> ' + (motivo || 'No especificado') + '</p>';
+            html += '</div>';
+            html += '</div>';
+            
+            content.innerHTML = html;
+            preview.style.display = 'block';
+        }
+    }
+    
+    // Inicializar eventos
+    document.addEventListener('DOMContentLoaded', function() {
+        var fechaInput = document.getElementById('fechaCita');
+        if (fechaInput) {
+            // Fecha mínima = hoy
+            var hoy = new Date();
+            var mes = (hoy.getMonth() + 1).toString();
+            if (mes.length === 1) mes = '0' + mes;
+            var dia = hoy.getDate().toString();
+            if (dia.length === 1) dia = '0' + dia;
+            fechaInput.setAttribute('min', hoy.getFullYear() + '-' + mes + '-' + dia);
+            
+            // Evento change
+            fechaInput.addEventListener('change', cargarHorariosDisponibles);
+        }
+        
+        if (USER_IS_ADMIN === '1') {
+            var medicoSelect = document.getElementById('medicoSelect');
+            if (medicoSelect) {
+                medicoSelect.addEventListener('change', cargarHorariosDisponibles);
+            }
+        }
+        
+        // Eventos para preview
+        var form = document.getElementById('citaForm');
+        if (form) {
+            var elementos = form.elements;
+            for (var i = 0; i < elementos.length; i++) {
+                elementos[i].addEventListener('change', actualizarPreview);
+                if (elementos[i].tagName === 'INPUT' || elementos[i].tagName === 'TEXTAREA') {
+                    elementos[i].addEventListener('input', actualizarPreview);
+                }
+            }
+        }
+    });
+</script>
+{% endverbatim %}
+
+{% endblock %}

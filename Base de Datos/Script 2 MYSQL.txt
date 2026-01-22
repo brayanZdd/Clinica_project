@@ -1,0 +1,83 @@
+-- Agregar estos procedimientos a tu base de datos clinica_db
+
+DELIMITER //
+
+-- SP para eliminar usuario (cascade elimina médicos/pacientes y citas)
+CREATE PROCEDURE sp_eliminar_usuario(
+    IN p_user_id INT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT 'Error al eliminar usuario' AS mensaje, 0 AS success;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Las citas y registros de médico/paciente se eliminan por CASCADE
+    DELETE FROM auth_user_custom WHERE id = p_user_id;
+    
+    SELECT 'Usuario eliminado exitosamente' AS mensaje, 1 AS success;
+    
+    COMMIT;
+END//
+
+-- SP para obtener historial de citas de un paciente
+CREATE PROCEDURE sp_historial_citas_paciente(
+    IN p_paciente_id INT
+)
+BEGIN
+    SELECT 
+        c.id,
+        c.fecha,
+        c.hora,
+        c.duracion,
+        c.estado,
+        c.motivo,
+        c.observaciones,
+        CONCAT(um.first_name, ' ', um.last_name) AS medico_nombre,
+        e.nombre AS especialidad
+    FROM citas c
+    INNER JOIN auth_user_custom um ON c.medico_id = um.id
+    LEFT JOIN medicos m ON um.id = m.user_id
+    LEFT JOIN especialidades e ON m.especialidad_id = e.id
+    WHERE c.paciente_id = p_paciente_id
+    ORDER BY c.fecha DESC, c.hora DESC;
+END//
+
+-- SP para obtener historial de citas de un médico
+CREATE PROCEDURE sp_historial_citas_medico(
+    IN p_medico_id INT
+)
+BEGIN
+    SELECT 
+        c.id,
+        c.fecha,
+        c.hora,
+        c.duracion,
+        c.estado,
+        c.motivo,
+        c.observaciones,
+        CONCAT(up.first_name, ' ', up.last_name) AS paciente_nombre,
+        up.phone AS paciente_telefono
+    FROM citas c
+    INNER JOIN auth_user_custom up ON c.paciente_id = up.id
+    WHERE c.medico_id = p_medico_id
+    ORDER BY c.fecha DESC, c.hora DESC;
+END//
+
+-- SP para cancelar cita
+CREATE PROCEDURE sp_cancelar_cita(
+    IN p_cita_id INT
+)
+BEGIN
+    UPDATE citas 
+    SET estado = 'CANCELADA', 
+        updated_at = NOW() 
+    WHERE id = p_cita_id;
+    
+    SELECT 'Cita cancelada exitosamente' AS mensaje;
+END//
+
+DELIMITER ;

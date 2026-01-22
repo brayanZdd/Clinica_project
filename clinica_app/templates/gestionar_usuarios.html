@@ -1,0 +1,272 @@
+<!-- clinica_app/templates/gestionar_usuarios.html -->
+{% extends 'base.html' %}
+
+{% block title %}Gestionar Usuarios - Clínica Dermatológica{% endblock %}
+
+{% block extra_css %}
+<style>
+    .users-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+    }
+
+    .user-card:hover {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .role-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .role-icon.admin {
+        background: #e74c3c;
+    }
+
+    .role-icon.medico {
+        background: #3498db;
+    }
+
+    .role-icon.paciente {
+        background: #27ae60;
+    }
+
+    .stats-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .filter-tabs {
+        margin-bottom: 20px;
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: var(--secondary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="users-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>
+            <i class="fas fa-users text-primary"></i> Gestión de Usuarios
+        </h3>
+        <a href="{% url 'registro' %}" class="btn btn-success">
+            <i class="fas fa-user-plus"></i> Nuevo Usuario
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="stats-card">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h4>{{ usuarios|length }}</h4>
+                <p class="mb-0">Total Usuarios</p>
+            </div>
+            <div class="col-md-4">
+                <h4 id="count-medicos">0</h4>
+                <p class="mb-0">Médicos</p>
+            </div>
+            <div class="col-md-4">
+                <h4 id="count-pacientes">0</h4>
+                <p class="mb-0">Pacientes</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros por rol -->
+    <ul class="nav nav-pills filter-tabs" id="roleTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-role="all" href="#" onclick="filterByRole('all'); return false;">
+                Todos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-role="1" href="#" onclick="filterByRole('1'); return false;">
+                <i class="fas fa-user-shield"></i> Administradores
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-role="2" href="#" onclick="filterByRole('2'); return false;">
+                <i class="fas fa-user-md"></i> Médicos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-role="3" href="#" onclick="filterByRole('3'); return false;">
+                <i class="fas fa-user"></i> Pacientes
+            </a>
+        </li>
+    </ul>
+
+    <!-- Búsqueda -->
+    <div class="mb-3">
+        <input type="text" id="searchUser" class="form-control" 
+               placeholder="Buscar por nombre, email o usuario...">
+    </div>
+
+    <!-- Lista de Usuarios -->
+    <div id="usersList">
+        {% for usuario in usuarios %}
+        <div class="user-card" data-role="{{ usuario.role }}" 
+             data-search="{{ usuario.username|lower }} {{ usuario.email|lower }} {{ usuario.get_full_name|lower }}">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="role-icon {% if usuario.role == 1 %}admin{% elif usuario.role == 2 %}medico{% else %}paciente{% endif %}">
+                        {% if usuario.role == 1 %}
+                        <i class="fas fa-user-shield"></i>
+                        {% elif usuario.role == 2 %}
+                        <i class="fas fa-user-md"></i>
+                        {% else %}
+                        <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col">
+                    <h6 class="mb-1">{{ usuario.get_full_name|default:usuario.username }}</h6>
+                    <small class="text-muted">
+                        <i class="fas fa-at"></i> {{ usuario.username }} | 
+                        <i class="fas fa-envelope"></i> {{ usuario.email }}
+                    </small><br>
+                    <small class="text-muted">
+                        <i class="fas fa-phone"></i> {{ usuario.phone|default:"No registrado" }}
+                    </small>
+                </div>
+                
+                <div class="col-auto">
+                    <span class="badge {% if usuario.role == 1 %}bg-danger{% elif usuario.role == 2 %}bg-primary{% else %}bg-success{% endif %}">
+                        {{ usuario.get_role_display }}
+                    </span>
+                </div>
+                
+                <div class="col-auto">
+                    {% if usuario.is_active %}
+                    <span class="badge bg-success">Activo</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactivo</span>
+                    {% endif %}
+                </div>
+                
+                <div class="col-auto">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-info" title="Ver detalles"
+                                onclick="verDetalles('{{ usuario.id }}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" title="Editar"
+                                onclick="editarUsuario('{{ usuario.id }}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        {% if usuario.id != user.id %}
+                        <button class="btn btn-sm btn-danger" title="Eliminar"
+                                onclick="eliminarUsuario('{{ usuario.id }}', '{{ usuario.get_full_name|default:usuario.username|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // Contar usuarios por rol al cargar
+    window.onload = function() {
+        var medicos = 0;
+        var pacientes = 0;
+        var cards = document.querySelectorAll('.user-card');
+        
+        for (var i = 0; i < cards.length; i++) {
+            var role = cards[i].getAttribute('data-role');
+            if (role === '2') medicos++;
+            if (role === '3') pacientes++;
+        }
+        
+        document.getElementById('count-medicos').textContent = medicos;
+        document.getElementById('count-pacientes').textContent = pacientes;
+        
+        // Configurar búsqueda
+        var searchInput = document.getElementById('searchUser');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                var searchTerm = this.value.toLowerCase();
+                var cards = document.querySelectorAll('.user-card');
+                
+                for (var i = 0; i < cards.length; i++) {
+                    var card = cards[i];
+                    var searchData = card.getAttribute('data-search');
+                    if (searchData.indexOf(searchTerm) !== -1) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        }
+    };
+
+    // Filtrar por rol
+    function filterByRole(role) {
+        // Actualizar tabs activos
+        var links = document.querySelectorAll('.nav-link');
+        for (var i = 0; i < links.length; i++) {
+            links[i].classList.remove('active');
+            if (links[i].getAttribute('data-role') === role) {
+                links[i].classList.add('active');
+            }
+        }
+        
+        // Mostrar/ocultar usuarios
+        var cards = document.querySelectorAll('.user-card');
+        for (var j = 0; j < cards.length; j++) {
+            var card = cards[j];
+            if (role === 'all' || card.getAttribute('data-role') === role) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+    }
+
+    // Funciones de acción
+    function verDetalles(userId) {
+        alert('Ver detalles del usuario ' + userId);
+    }
+
+    function editarUsuario(userId) {
+        window.location.href = '{% url "editar_usuario" 0 %}'.replace('0', userId);
+    }
+
+    function eliminarUsuario(userId, userName) {
+        var mensaje = '¿Está seguro que desea eliminar al usuario ' + userName + '?\n\n';
+        mensaje += 'Esta acción eliminará también todas sus citas y registros asociados.';
+        
+        if (confirm(mensaje)) {
+            window.location.href = '{% url "eliminar_usuario" 0 %}'.replace('0', userId);
+        }
+    }
+</script>
+{% endblock %}
