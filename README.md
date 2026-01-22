@@ -17,4 +17,17 @@ Sistema web académico para la gestión de una clínica dermatológica, desarrol
 ## Estado del proyecto
 Proyecto académico. El sistema fue funcional durante su desarrollo; actualmente se presenta el código como evidencia de la estructura y lógica del sistema.
 
+## 📷 Capturas de Pantalla
+
+### 🔐 Login
+![Login](docs/screenshots/login.png)
+
+### 🏠 Historial
+![Historial](docs/screenshots/historial.png)
+
+### 📅 Notificaciones
+![Notificaciones](docs/screenshots/notificacion.jpeg)
+
+### 🧑‍🤝‍🧑 Usuarios
+![Usuarios](docs/screenshots/usuarios.png)
 
